@@ -63,19 +63,10 @@ endif()
 
 # # target_link_libraries(foo PRIVATE nlohmann_json::nlohmann_json)
 
-include(FetchContent)
+set(nlohmann_json_SOURCE_DIR "/home/liuxirui/nlohmann_json")  # 修改为你手动克隆的路径
+set(nlohmann_json_BINARY_DIR "/home/liuxirui/nlohmann_json/build")
 
-FetchContent_Declare(
-    nlohmann_json
-    GIT_REPOSITORY https://github.com/nlohmann/json.git
-    GIT_TAG v3.10.4
-)
-
-FetchContent_GetProperties(nlohmann_json)
-if(NOT nlohmann_json_POPULATED)
-    FetchContent_Populate(nlohmann_json)
-    add_subdirectory(${nlohmann_json_SOURCE_DIR} ${nlohmann_json_BINARY_DIR})
-endif()
+add_subdirectory(${nlohmann_json_SOURCE_DIR} ${nlohmann_json_BINARY_DIR})
 
 target_include_directories(faiss PUBLIC ${nlohmann_json_SOURCE_DIR}/include)
 
