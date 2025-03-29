@@ -63,8 +63,8 @@ endif()
 
 # # target_link_libraries(foo PRIVATE nlohmann_json::nlohmann_json)
 
-set(nlohmann_json_SOURCE_DIR "/home/liuxirui/nlohmann_json")  # 修改为你手动克隆的路径
-set(nlohmann_json_BINARY_DIR "/home/liuxirui/nlohmann_json/build")
+set(nlohmann_json_SOURCE_DIR "/Data2/v-xiruiliu/nlohmann_json")  # 修改为你手动克隆的路径
+set(nlohmann_json_BINARY_DIR "/Data2/v-xiruiliu/nlohmann_json/build")
 
 add_subdirectory(${nlohmann_json_SOURCE_DIR} ${nlohmann_json_BINARY_DIR})
 

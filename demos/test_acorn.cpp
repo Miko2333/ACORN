@@ -112,36 +112,67 @@ int main(int argc, char *argv[]) {
     std::vector<int> metadata;
     for(int i = 0; i < N; i++)
         metadata.push_back(1);
+
+    printf("Reading base\n");
+    size_t nb, db;
+    float* xb = fvecs_read("./testing_data/sift1M/sift_base.fvecs", &db, &nb);
+    // nb = 1000000;
+    std::cout << nb << '\n';
+
     printf("Start building ACORN\n");
+    double t1 = elapsed();
     // ACORN-gamma
     faiss::IndexACORNFlat acorn_gamma(d, M, gamma, metadata, M_beta);
-
     // ACORN-1
-    // faiss::IndexACORNFlat acorn_1(d, M, 1, M*2);
-    printf("Reading base\n");
-    size_t nb, d2;
-    float* xb = fvecs_read("./testing_data/sift1M/sift_base.fvecs", &d2, &nb);
-    nb = 1000000;
-    d = d2;
-    std::cout << nb << '\n';
-    printf("Adding base\n");
+    // faiss::IndexACORNFlat acorn_1(d, M, 1, metadata, M);
     acorn_gamma.add(nb, xb);
+    printf("Base added: [%.3f s]\n", elapsed() - t1);
+
     printf("Reading queries\n");
-    size_t nq;
-    float* xq = fvecs_read("./testing_data/sift1M/sift_query.fvecs", &d2, &nq);
-    nq = 100;
+    size_t nq, dq;
+    float* xq = fvecs_read("./testing_data/sift1M/sift_query.fvecs", &dq, &nq);
+    // nq = 1000;
     std::cout << nq << '\n';
     
+    printf("Reading groundtruth\n");
+    size_t ng, kg;
+    int* gt = ivecs_read("./testing_data/sift1M/sift_groundtruth.ivecs", &kg, &ng);
+
     std::vector<faiss::idx_t> nns2(k * nq);
     std::vector<float> dis2(k * nq);
     std::vector<char> filter_ids_map(nq * N);
+    printf("Predicate filtering\n");
+    double t2 = elapsed();
     for (int i = 0; i < nq; i++) {
         for (int j = 0; j < N; j++) {
             filter_ids_map[i * N + j] = true;
         }
     }
-    acorn_gamma.search(nq, xq, k, dis2.data(), nns2.data(), filter_ids_map.data());
+    printf("Predicate filtering done: [%.3f s]\n", elapsed() - t2);
 
+    printf("Searching\n");
+    double t3 = elapsed();
+    acorn_gamma.search(nq, xq, k, dis2.data(), nns2.data(), filter_ids_map.data());
+    double query_time = elapsed() - t3;
+    printf("Search done: [%.3f s]\n", query_time);
+
+    double ans = 0;
+    for (int i = 0; i < nq; i++) {
+        double res = 0;
+        for (int j = 0; j < k; j++) {
+            // printf("%7ld %7d\n", nns2[j + i * k], gt[j + i * kg]);
+            for (int l = 0; l < k; l++) {
+                if (nns2[j + i * k] == gt[l + i * kg]) {
+                    res++;
+                    break;
+                }
+            }
+        }
+        ans += res / k;
+    }
+    ans /= nq;
+    printf("Recall@%d = %.3f\n", k, ans);
+    printf("QPS = %.3f\n", nq / query_time);
     const faiss::ACORNStats& stats = faiss::acorn_stats;
 
     std::cout << "============= ACORN QUERY PROFILING STATS =============" << std::endl;

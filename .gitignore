@@ -20,4 +20,5 @@ faiss/python/swigfaiss_avx2.swig
 /build/
 /testing_data/
 /nlohmann_json
+.vscode
 * text=auto
