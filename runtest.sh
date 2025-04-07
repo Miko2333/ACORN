@@ -18,3 +18,6 @@ now=$(date +"%m-%d-%Y")
 # TZ='America/Los_Angeles' date +"Start time: %H:%M" &>> ${dir}/summary_sift_n=${N}_gamma=${gamma}.txt
 # ./build/demos/test_acorn $N $gamma $dataset $M $M_beta  &>> ${dir}/summary_sift_n=${N}_gamma=${gamma}.txt
 ./build/demos/test_acorn 1000000 12 sift1M 32 64
+./build/demos/test_acorn 2029997 12 paper 32 64
+./build/demos/test_bf 1000000 12 sift1M 32 64
+./build/demos/test_bf 2029997 12 paper 32 64

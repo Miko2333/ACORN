@@ -3,6 +3,8 @@
 #include <cstdlib>
 #include <random>
 #include <cstring>
+#include <queue>
+#include <omp.h>
 
 
 #include <sys/time.h>
@@ -108,11 +110,11 @@ int main(int argc, char *argv[]) {
         M_beta = atoi(argv[5]);
         printf("M_beta: %d\n", M_beta);
 
-        if (argc == 7) {
+        if (argc >= 7) {
             meta_flag = true;
             meta_num = atoi(argv[6]);
-            printf("meta_num: %d\n", meta_num);
         }
+
     }
 
     printf("Reading base vectors\n");
@@ -182,45 +184,14 @@ int main(int argc, char *argv[]) {
             metadata_query[i] = 1;
     }
     
-    printf("Reading groundtruth\n");
-    size_t ng = 0, kg = 0;
-    int* gt = NULL;
-    if (meta_flag) {
-        // experiment
-        std::ifstream gt_file;
-        std::stringstream filename;
-        if (dataset == "sift1M")
-            filename << "./testing_data/sift1M/groundtruth_" << meta_num << ".txt";
-        else if (dataset == "paper")
-            filename << "./testing_data/paper/groundtruth_" << meta_num << ".txt";
-        gt_file.open(filename.str());
-        if (!gt_file) {
-            printf("Failed to open groundtruth file\n");
-            return 0;
-        }
-        gt_file >> ng >> kg;
-        gt = new int[ng * kg];
-        for (int i = 0; i < ng * kg; i++) {
-            gt_file >> gt[i];
-        }
-        gt_file.close();
-    }
-    else {
-        if (dataset == "sift1M")
-            gt = ivecs_read("./testing_data/sift1M/sift_groundtruth.ivecs", &kg, &ng);
-        else if (dataset == "paper")
-            gt = ivecs_read("./testing_data/paper/paper_groundtruth.ivecs", &kg, &ng);
-    }
-    std::cout << ng << ' ' << kg << '\n';
-    
-    printf("Start building ACORN\n");
-    double t1 = elapsed();
-    // ACORN-gamma
-    faiss::IndexACORNFlat acorn_gamma(d, M, gamma, metadata_base, M_beta);
-    // ACORN-1
-    // faiss::IndexACORNFlat acorn_1(d, M, 1, metadata, M);
-    acorn_gamma.add(nb, xb);
-    printf("Base added: [%.3f s]\n", elapsed() - t1);
+    // printf("Reading groundtruth\n");
+    // size_t ng = 0, kg = 0;
+    // int* gt = NULL;
+    // if (dataset == "sift1M")
+    //     gt = ivecs_read("./testing_data/sift1M/sift_groundtruth.ivecs", &kg, &ng);
+    // else if (dataset == "paper")
+    //     gt = ivecs_read("./testing_data/paper/paper_groundtruth.ivecs", &kg, &ng);
+    // std::cout << ng << ' ' << kg << '\n';
 
     std::vector<faiss::idx_t> nns2(k * nq);
     std::vector<float> dis2(k * nq);
@@ -240,41 +211,67 @@ int main(int argc, char *argv[]) {
 
     printf("Searching\n");
     double t3 = elapsed();
-    acorn_gamma.search(nq, xq, k, dis2.data(), nns2.data(), filter_ids_map.data());
+#pragma omp parallel for
+    for (int i = 0; i < nq; i++) {  
+        // printf("%d\n", i);
+        faiss::IndexFlat ind(d);
+        std::vector<int> ori;
+        for (int j = 0; j < N; j++) {
+            if (filter_ids_map[i * N + j]) {
+                ind.add(1, xb + (j * d));
+                ori.push_back(j);
+            }
+        }
+        ind.search(1, xq + i * d, k, dis2.data() + i * k, nns2.data() + i * k);
+        for (int j = 0; j < k; j++) {
+            nns2[j + i * k] = ori[nns2[j + i * k]];
+        }
+    }
     double query_time = elapsed() - t3;
     printf("Search done: [%.3f s]\n", query_time);
 
-    double ans = 0;
-    for (int i = 0; i < nq; i++) {
-        double res = 0;
-        for (int j = 0; j < k; j++) {
-            if (i < 20)
-                printf("%7ld %7d\n", nns2[j + i * k], gt[j + i * kg]);
-            for (int l = 0; l < k; l++) {
-                if (nns2[j + i * k] == gt[l + i * kg]) {
-                    res++;
-                    break;
-                }
-            }
-        }
-        ans += res / k;
-    }
-    ans /= nq;
-    printf("Recall@%d = %.3f\n", k, ans);
-    printf("QPS = %.3f\n", nq / query_time);
-    const faiss::ACORNStats& stats = faiss::acorn_stats;
+    // double ans = 0;
+    // for (int i = 0; i < nq; i++) {
+    //     double res = 0;
+    //     for (int j = 0; j < k; j++) {
+    //         // if (i < 20)
+    //         //     printf("%7ld %7d\n", nns2[j + i * k], gt[j + i * kg]);
+    //         bool flag = false;
+    //         for (int l = 0; l < k; l++) {
+    //             if (nns2[j + i * k] == gt[l + i * kg]) {
+    //                 res++;
+    //                 flag = true;
+    //                 break;
+    //             }
+    //         }
+    //         if (!flag) {
+    //             std::cout << "Expected" << gt[j + i * kg] << ' ' << "output" << nns2[j + i * k] << '\n';
+    //         }
+    //     }
+    //     ans += res / k;
+    // }
+    // ans /= nq;
+    // printf("Recall@%d = %.3f\n", k, ans);
+    // printf("QPS = %.3f\n", nq / query_time);
 
-    std::cout << "============= ACORN QUERY PROFILING STATS =============" << std::endl;
-    printf("[%.3f s] Timing results for search of k=%d nearest neighbors of nq=%ld vectors in the index\n",
-            elapsed() - t0,
-            k,
-            nq);
-    std::cout << "n1: " << stats.n1 << std::endl;
-    std::cout << "n2: " << stats.n2 << std::endl;
-    std::cout << "n3 (number distance comps at level 0): " << stats.n3 << std::endl;
-    std::cout << "ndis: " << stats.ndis << std::endl;
-    std::cout << "nreorder: " << stats.nreorder << std::endl;
-    printf("average distance computations per query: %f\n", (float)stats.n3 / stats.n1);
-    
+    std::ofstream out;
+    std::stringstream filename;
+    if (dataset == "sift1M") 
+        filename << "./testing_data/sift1M/groundtruth_" << meta_num << ".txt";
+    else if (dataset == "paper")
+        filename << "./testing_data/paper/groundtruth_" << meta_num << ".txt";
+    out.open(filename.str());
+    if (!out) {
+        printf("Failed to open metadata output file\n");
+        return 0;
+    }
+    out << nq << ' ' << k << '\n';
+    for (int i = 0; i < nq; i++) {
+        for (int j = 0; j < k; j++) {
+            out << nns2[j + i * k] << ' ';
+        }
+        out << '\n';
+    }
+    out.close();
     return 0;
 }
