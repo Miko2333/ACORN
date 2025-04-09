@@ -115,6 +115,9 @@ int main(int argc, char *argv[]) {
         }
     }
 
+    std::stringstream output_file;
+    output_file << "./results/ACORN_res_" << dataset << "_" << meta_num << ".txt";
+    freopen(output_file.str().c_str(), "w", stdout);
     printf("Reading base vectors\n");
     size_t nb = 0, db = 0;
     float* xb = NULL;
@@ -248,11 +251,11 @@ int main(int argc, char *argv[]) {
     for (int i = 0; i < nq; i++) {
         double res = 0;
         for (int j = 0; j < k; j++) {
-            if (i < 20)
-                printf("%7ld %7d\n", nns2[j + i * k], gt[j + i * kg]);
+            // if (i < 20)
+            //     printf("%7ld %7d\n", nns2[j + i * k], gt[j + i * kg]);
             for (int l = 0; l < k; l++) {
                 if (nns2[j + i * k] == gt[l + i * kg]) {
-                    res++;
+                    res = res + 1;
                     break;
                 }
             }
