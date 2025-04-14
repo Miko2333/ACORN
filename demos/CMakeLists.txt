@@ -107,6 +107,9 @@ target_link_libraries(utils PRIVATE faiss)
 add_executable(test_acorn EXCLUDE_FROM_ALL test_acorn.cpp)
 target_link_libraries(test_acorn PRIVATE faiss)
 
+add_executable(test_cq EXCLUDE_FROM_ALL test_cq.cpp)
+target_link_libraries(test_cq PRIVATE faiss)
+
 find_package(OpenMP REQUIRED)
 add_executable(test_bf EXCLUDE_FROM_ALL test_bf.cpp)
 target_link_libraries(test_bf PRIVATE faiss)

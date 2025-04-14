@@ -21,6 +21,7 @@ set(FAISS_SRC
   IndexFlatCodes.cpp
   IndexHNSW.cpp
   IndexACORN.cpp
+  IndexCQ.cpp
   IndexIDMap.cpp
   IndexIVF.cpp
   IndexIVFAdditiveQuantizer.cpp
@@ -55,6 +56,7 @@ set(FAISS_SRC
   impl/FaissException.cpp
   impl/HNSW.cpp
   impl/ACORN.cpp
+  impl/CQ.cpp
   impl/NSG.cpp
   impl/PolysemousTraining.cpp
   impl/ProductQuantizer.cpp
@@ -111,6 +113,7 @@ set(FAISS_HEADERS
   IndexFlatCodes.h
   IndexHNSW.h
   IndexACORN.h
+  IndexCQ.h
   IndexIDMap.h
   IndexIVF.h
   IndexIVFAdditiveQuantizer.h
@@ -150,6 +153,7 @@ set(FAISS_HEADERS
   impl/FaissException.h
   impl/HNSW.h
   impl/ACORN.h
+  impl/CQ.h
   impl/LocalSearchQuantizer.h
   impl/ProductAdditiveQuantizer.h
   impl/LookupTableScaler.h
