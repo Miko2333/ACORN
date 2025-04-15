@@ -104,6 +104,9 @@ target_link_libraries(utils PRIVATE faiss)
 # add_executable(test_laion_arb_pred EXCLUDE_FROM_ALL test_laion_arb_pred.cpp)
 # target_link_libraries(test_laion_arb_pred PRIVATE faiss)
 
+add_executable(test_hnsw EXCLUDE_FROM_ALL test_hnsw.cpp)
+target_link_libraries(test_hnsw PRIVATE faiss)
+
 add_executable(test_acorn EXCLUDE_FROM_ALL test_acorn.cpp)
 target_link_libraries(test_acorn PRIVATE faiss)
 
