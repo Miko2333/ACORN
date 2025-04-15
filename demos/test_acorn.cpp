@@ -108,10 +108,15 @@ int main(int argc, char *argv[]) {
         M_beta = atoi(argv[5]);
         printf("M_beta: %d\n", M_beta);
 
-        if (argc == 7) {
+        if (argc >= 7) {
             meta_flag = true;
             meta_num = atoi(argv[6]);
             printf("meta_num: %d\n", meta_num);
+        }
+
+        if (argc == 8) {
+            efs = atoi(argv[7]);
+            printf("efs: %d\n", efs);
         }
     }
 
@@ -222,6 +227,7 @@ int main(int argc, char *argv[]) {
     faiss::IndexACORNFlat acorn_gamma(d, M, gamma, metadata_base, M_beta);
     // ACORN-1
     // faiss::IndexACORNFlat acorn_1(d, M, 1, metadata, M);
+    acorn_gamma.acorn.efSearch = efs;
     acorn_gamma.add(nb, xb);
     printf("Base added: [%.3f s]\n", elapsed() - t1);
 

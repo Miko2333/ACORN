@@ -377,9 +377,10 @@ int hybrid_greedy_update_nearest(
     ) {
     debug("%s\n", "reached"); 
     // printf("hybrid_greedy_update_nearest called with parameters: filter: %d, op: %d, regex: %s, level: %d\n", filter, op, regex.c_str(), level);
+    // printf("hybrid_greedy_update_nearest called with parameters: query_id: %d, query_len: %d, level: %d\n", query_id, query_len, level);
     if (query_id != -1) {
         FAISS_THROW_IF_NOT(query_len > 0 && tmp_q != nullptr && tmp_d != nullptr);
-        FAISS_THROW_IF_NOT(tmp_q->size() == query_len && tmp_d->size() == query_len);
+        FAISS_THROW_IF_NOT(tmp_q->size() == query_len * query_len && tmp_d->size() == query_len);
     }
 
     auto check_dis = [query_id, query_len, tmp_q, tmp_d, d_nearest] (int v) {
@@ -448,7 +449,9 @@ int hybrid_greedy_update_nearest(
                     float dis = qdis(v);
                     ndis += 1;
 
-                    (*tmp_d)[query_id][v] = dis; // save this computed distance
+                    if (query_id != -1) {
+                        (*tmp_d)[query_id][v] = dis; // save this computed distance
+                    }
 
                     if (dis < d_nearest || !filter_map[nearest]) {
                     
@@ -492,7 +495,9 @@ int hybrid_greedy_update_nearest(
                             ndis += 1;
                             // debug_search("------------found: %d, metadata: %d distance to v: %f\n", v2, metadata2, dis2);
             
-                            (*tmp_d)[query_id][v2] = dis2; // save this computed distance
+                            if (query_id != -1) {
+                                (*tmp_d)[query_id][v2] = dis2; // save this computed distance
+                            }
 
                             if (dis2 < d_nearest || !filter_map[nearest]) {
                                 nearest = v2;
@@ -979,7 +984,8 @@ ACORNStats CQ::hybrid_search(
         int ndis_upper = 0;
         for (int level = max_level; level >= 1; level--) {
             debug_search("-at level %d, searching for greedy nearest from current nearest: %d, dist: %f, metadata: %d\n", level, nearest, d_nearest, metadata[nearest]);
-            ndis_upper += Opt::hybrid_greedy_update_nearest(*this, qdis, filter_map, level, nearest, d_nearest);
+            ndis_upper += Opt::hybrid_greedy_update_nearest(*this, qdis, filter_map, level, nearest, d_nearest,
+                query_id, query_len, tmp_q, tmp_d);
             // ndis_upper += hybrid_greedy_update_nearest(*this, qdis, filter, op, regex, level, nearest, d_nearest);
             debug_search("-at level %d, new nearest: %d, d: %f, metadata: %d\n", level, nearest, d_nearest, metadata[nearest]);
             

@@ -304,6 +304,7 @@ void IndexCQ::search(
 
     idx_t check_period =
         InterruptCallback::get_period_hint(cq.max_level * d * efSearch);
+    // std::cout << "block len = " << check_period << '\n';
     const idx_t blk_len = 32;
     check_period = std::min(check_period, blk_len);
 
@@ -314,15 +315,12 @@ void IndexCQ::search(
         VisitedTable vt(ntotal);
 
         DistanceComputer* dis = storage_distance_computer(storage);
-        // ScopeDeleter1<DistanceComputer> del(dis);
+        ScopeDeleter1<DistanceComputer> del(dis);
         
         idx_t len = i1 - i0;
-        faiss::IndexFlatL2 index_q(d);
-        index_q.add(len, x + i0 * d);
         std::vector<float> tmp_q(len * len, 0); // dis between query and query
         std::vector <std::unordered_map <idx_t, float> > tmp_d(len); // dis between query and database
 
-        #pragma omp parallel for
         for (idx_t i = 0; i < len; i++) {
             for (idx_t j = 0; j < i; j++) {
                 tmp_q[i * len + j] = sqrt(
@@ -334,15 +332,19 @@ void IndexCQ::search(
         }
         ndis += len * (len - 1) / 2;
 
+        // std::cout << "Querying " << i0 << '\n';
+
         for (idx_t i = i0; i < i1; i++) {
             idx_t* idxi = labels + i * k;
             float* simi = distances + i * k;
             char* filters = filter_id_map + i * ntotal;
-            // dis->set_query(x + i * d);
+            dis->set_query(x + i * d);
 
             maxheap_heapify(k, simi, idxi);
             ACORNStats stats = cq.hybrid_search(*dis, k, idxi, simi, vt, filters, params,
                 i - i0, len, &tmp_q, &tmp_d); //TODO edit to hybrid search
+
+            // ACORNStats stats = cq.hybrid_search(*dis, k, idxi, simi, vt, filters, params);
 
             // ACORNStats stats = acorn.hybrid_search(*dis, k, idxi, simi, vt, filters[i], op, regex, params); //TODO edit to hybrid search
             n1 += stats.n1;

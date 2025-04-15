@@ -114,6 +114,11 @@ int main(int argc, char *argv[]) {
             meta_num = atoi(argv[6]);
             printf("meta_num: %d\n", meta_num);
         }
+
+        if (argc == 8) {
+            efs = atoi(argv[7]);
+            printf("efs: %d\n", efs);
+        }
     }
 
     std::stringstream output_file;
@@ -220,6 +225,7 @@ int main(int argc, char *argv[]) {
     printf("Start building CQ\n");
     double t1 = elapsed();
     faiss::IndexCQFlat cq(d, M, gamma, metadata_base, M_beta);
+    cq.cq.efSearch = efs;
     cq.add(nb, xb);
     printf("Base added: [%.3f s]\n", elapsed() - t1);
 
@@ -260,7 +266,6 @@ int main(int argc, char *argv[]) {
 
     printf("Searching\n");
     double t3 = elapsed();
-    const size_t block_len = 50;
     cq.search(nq, xq, k, dis2.data(), nns2.data(), filter_ids_map.data());
     double query_time = elapsed() - t3;
     printf("Search done: [%.3f s]\n", query_time);

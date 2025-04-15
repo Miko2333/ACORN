@@ -1,7 +1,9 @@
+cmake -DFAISS_ENABLE_GPU=OFF -DFAISS_ENABLE_PYTHON=OFF -DBUILD_TESTING=ON -DBUILD_SHARED_LIBS=ON -DCMAKE_BUILD_TYPE=release -B build
 make -C build -j faiss
 make -C build utils
 make -C build test_acorn
 make -C build test_bf
+make -C build test_cq
 
 now=$(date +"%m-%d-%Y")
 
@@ -22,3 +24,5 @@ now=$(date +"%m-%d-%Y")
 ./build/demos/test_acorn 2029997 12 paper 32 64 0
 ./build/demos/test_bf 1000000 12 sift1M 32 64 0
 ./build/demos/test_bf 2029997 12 paper 32 64 0
+./build/demos/test_cq 1000000 12 sift1M 32 64 0
+./build/demos/test_cq 2029997 12 paper 32 64 0
