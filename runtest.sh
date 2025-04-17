@@ -8,7 +8,7 @@ make -C build test_cq
 
 # now=$(date +"%m-%d-%Y")
 
-efs=50
+efs=8
 
 for((i=0;i<5;i++)) do
     ./build/demos/test_hnsw 1000000 12 sift1M 32 64 $i $efs

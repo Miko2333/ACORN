@@ -109,7 +109,7 @@ int main(int argc, char *argv[]) {
         M_beta = atoi(argv[5]);
         printf("M_beta: %d\n", M_beta);
 
-        if (argc == 7) {
+        if (argc >= 7) {
             meta_flag = true;
             meta_num = atoi(argv[6]);
             printf("meta_num: %d\n", meta_num);
