@@ -305,7 +305,7 @@ void IndexCQ::search(
     idx_t check_period =
         InterruptCallback::get_period_hint(cq.max_level * d * efSearch);
     // std::cout << "block len = " << check_period << '\n';
-    const idx_t blk_len = 16;
+    const idx_t blk_len = 32;
     check_period = std::min(check_period, blk_len);
 
     #pragma omp parallel for reduction(+ : n1, n2, n3, ndis, nreorder, candidates_loop)

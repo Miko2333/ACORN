@@ -11,14 +11,14 @@ make -C build test_cq
 efs=16
 
 for((i=0;i<5;i++)) do
-    ./build/demos/test_hnsw 1000000 12 sift1M 32 64 $i $efs
-    ./build/demos/test_acorn 1000000 12 sift1M 32 64 $i $efs
+    # ./build/demos/test_hnsw 1000000 12 sift1M 32 64 $i $efs
+    # ./build/demos/test_acorn 1000000 12 sift1M 32 64 $i $efs
     ./build/demos/test_cq 1000000 12 sift1M 32 64 $i $efs
 done
 
 for((i=0;i<5;i++)) do
-    ./build/demos/test_hnsw 2029997 12 paper 32 64 $i $efs
-    ./build/demos/test_acorn 2029997 12 paper 32 64 $i $efs
+    # ./build/demos/test_hnsw 2029997 12 paper 32 64 $i $efs
+    # ./build/demos/test_acorn 2029997 12 paper 32 64 $i $efs
     ./build/demos/test_cq 2029997 12 paper 32 64 $i $efs
 done
 
