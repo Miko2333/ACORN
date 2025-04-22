@@ -62,7 +62,7 @@ int main(int argc, char *argv[]) {
     int gamma;
     int n_centroids;
     // int filter = 0;
-    std::string dataset; // must be sift1B or sift1M or tripclick
+    std::string dataset; // must be sift1B or sift or tripclick
     int test_partitions = 0;
     int step = 10; //2
     
@@ -73,7 +73,7 @@ int main(int argc, char *argv[]) {
     int num_trials = 60;
 
 
-    size_t N = 0; // N will be how many we truncate nb from sift1M to
+    size_t N = 0; // N will be how many we truncate nb from sift to
 
     int opt;
 
@@ -96,9 +96,9 @@ int main(int argc, char *argv[]) {
         
         dataset = argv[3];
         printf("dataset: %s\n", dataset.c_str());
-        if (dataset != "sift1M" && dataset != "sift1M_test" && dataset != "sift1B" && dataset != "tripclick" && dataset != "paper" && dataset != "paper_rand2m") {
+        if (dataset != "sift" && dataset != "paper" && dataset != "gist") {
             printf("got dataset: %s\n", dataset.c_str());
-            fprintf(stderr, "Invalid <dataset>; must be a value in [sift1M, sift1B]\n");
+            fprintf(stderr, "Invalid <dataset>; must be a value in [sift, sift1B]\n");
             exit(1);
         }
 
@@ -121,15 +121,17 @@ int main(int argc, char *argv[]) {
     }
 
     std::stringstream output_file;
-    output_file << "./results/ACORN_res_" << dataset << "_" << meta_num << ".txt";
+    output_file << "./results/CQ_res_" << dataset << "_" << meta_num << ".txt";
     freopen(output_file.str().c_str(), "w", stdout);
     printf("Reading base vectors\n");
     size_t nb = 0, db = 0;
     float* xb = NULL;
-    if (dataset == "sift1M")
-        xb = fvecs_read("./testing_data/sift1M/sift_base.fvecs", &db, &nb);
+    if (dataset == "sift")
+        xb = fvecs_read("./testing_data/sift/sift_base.fvecs", &db, &nb);
     else if (dataset == "paper")
         xb = fvecs_read("./testing_data/paper/paper_base.fvecs", &db, &nb);
+    else if (dataset == "gist")
+        xb = fvecs_read("./testing_data/gist/gist_base.fvecs", &db, &nb);
     d = db;
     // nb = 1000000;
     std::cout << nb << ' ' << db << '\n';
@@ -139,10 +141,12 @@ int main(int argc, char *argv[]) {
     if (meta_flag) {
         std::ifstream meta_in;
         std::stringstream filename;
-        if (dataset == "sift1M") 
-            filename << "./testing_data/sift1M/metadata_base_" << meta_num << ".txt";
+        if (dataset == "sift") 
+            filename << "./testing_data/sift/metadata_base_" << meta_num << ".txt";
         else if (dataset == "paper")
             filename << "./testing_data/paper/metadata_base_" << meta_num << ".txt";
+        else if (dataset == "gist")
+            filename << "./testing_data/gist/metadata_base_" << meta_num << ".txt";
         meta_in.open(filename.str());
         if (!meta_in) {
             std::cout << "Failed to open base metadata file\n";
@@ -160,10 +164,12 @@ int main(int argc, char *argv[]) {
     printf("Reading query vectors\n");
     size_t nq = 0, dq = 0;
     float* xq = NULL;
-    if (dataset == "sift1M")
-        xq = fvecs_read("./testing_data/sift1M/sift_query.fvecs", &dq, &nq);
+    if (dataset == "sift")
+        xq = fvecs_read("./testing_data/sift/sift_query.fvecs", &dq, &nq);
     else if (dataset == "paper")
         xq = fvecs_read("./testing_data/paper/paper_query.fvecs", &dq, &nq);
+    else if (dataset == "gist")
+        xq = fvecs_read("./testing_data/gist/gist_query.fvecs", &dq, &nq);
     // nq = 1000;
     std::cout << nq << '\n';
 
@@ -172,10 +178,12 @@ int main(int argc, char *argv[]) {
     if (meta_flag) {
         std::ifstream meta_in;
         std::stringstream filename;
-        if (dataset == "sift1M") 
-            filename << "./testing_data/sift1M/metadata_query_" << meta_num << ".txt";
+        if (dataset == "sift") 
+            filename << "./testing_data/sift/metadata_query_" << meta_num << ".txt";
         else if (dataset == "paper")
             filename << "./testing_data/paper/metadata_query_" << meta_num << ".txt";
+        else if (dataset == "gist")
+            filename << "./testing_data/gist/metadata_query_" << meta_num << ".txt";
         meta_in.open(filename.str());
         if (!meta_in) {
             std::cout << "Failed to open query metadata file\n";
@@ -197,10 +205,12 @@ int main(int argc, char *argv[]) {
         // experiment
         std::ifstream gt_file;
         std::stringstream filename;
-        if (dataset == "sift1M")
-            filename << "./testing_data/sift1M/groundtruth_" << meta_num << ".txt";
+        if (dataset == "sift")
+            filename << "./testing_data/sift/groundtruth_" << meta_num << ".txt";
         else if (dataset == "paper")
             filename << "./testing_data/paper/groundtruth_" << meta_num << ".txt";
+        else if (dataset == "gist")
+            filename << "./testing_data/gist/groundtruth_" << meta_num << ".txt";
         gt_file.open(filename.str());
         if (!gt_file) {
             printf("Failed to open groundtruth file\n");
@@ -214,10 +224,12 @@ int main(int argc, char *argv[]) {
         gt_file.close();
     }
     else {
-        if (dataset == "sift1M")
-            gt = ivecs_read("./testing_data/sift1M/sift_groundtruth.ivecs", &kg, &ng);
+        if (dataset == "sift")
+            gt = ivecs_read("./testing_data/sift/sift_groundtruth.ivecs", &kg, &ng);
         else if (dataset == "paper")
             gt = ivecs_read("./testing_data/paper/paper_groundtruth.ivecs", &kg, &ng);
+        else if (dataset == "gist")
+            gt = ivecs_read("./testing_data/gist/gist_groundtruth.ivecs", &kg, &ng);
     }
     std::cout << ng << ' ' << kg << '\n';
     

@@ -10,6 +10,15 @@ make -C build test_cq
 
 efs=16
 
+# ./build/demos/test_bf 1000000 12 sift1M 32 64 5
+
+# ./build/demos/test_hnsw 1000000 12 sift1M 32 64 5 $efs
+
+# ./build/demos/test_acorn 1000000 12 sift1M 32 64 5 $efs
+
+# ./build/demos/test_cq 1000000 12 sift1M 32 64 5 $efs
+
+
 for((i=0;i<5;i++)) do
     # ./build/demos/test_hnsw 1000000 12 sift1M 32 64 $i $efs
     # ./build/demos/test_acorn 1000000 12 sift1M 32 64 $i $efs

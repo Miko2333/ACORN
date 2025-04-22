@@ -22,4 +22,6 @@ faiss/python/swigfaiss_avx2.swig
 /nlohmann_json
 /results/
 .vscode
+*.png
+draw.py
 * text=auto
