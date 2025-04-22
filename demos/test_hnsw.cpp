@@ -120,7 +120,7 @@ int main(int argc, char *argv[]) {
     }
 
     std::stringstream output_file;
-    output_file << "./results/CQ_res_" << dataset << "_" << meta_num << ".txt";
+    output_file << "./results/HNSW_res_" << dataset << "_" << meta_num << ".txt";
     freopen(output_file.str().c_str(), "w", stdout);
     printf("Reading base vectors\n");
     size_t nb = 0, db = 0;
@@ -305,7 +305,7 @@ int main(int argc, char *argv[]) {
     printf("QPS = %.3f\n", nq / query_time);
     const faiss::HNSWStats& stats = faiss::hnsw_stats;
 
-    std::cout << "============= ACORN QUERY PROFILING STATS =============" << std::endl;
+    std::cout << "============= HNSW QUERY PROFILING STATS =============" << std::endl;
     printf("[%.3f s] Timing results for search of k=%d nearest neighbors of nq=%ld vectors in the index\n",
             elapsed() - t0,
             k,

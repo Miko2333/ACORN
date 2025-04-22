@@ -10,26 +10,37 @@ make -C build test_cq
 
 efs=16
 
-# ./build/demos/test_bf 1000000 12 sift1M 32 64 5
+dataset="paper"
 
-# ./build/demos/test_hnsw 1000000 12 sift1M 32 64 5 $efs
+if [[ "$dataset" == "sift" ]]; then
+    N=1000000
+    gamma=12
+    M=32
+    M_beta=64
+elif [[ "$dataset" == "paper" ]]; then
+    N=2029997
+    gamma=12
+    M=32
+    M_beta=64
+elif [[ "$dataset" == "gist" ]]; then
+    N=1000000
+    gamma=12
+    M=32
+    M_beta=64
+fi
 
-# ./build/demos/test_acorn 1000000 12 sift1M 32 64 5 $efs
+export OMP_NUM_THREADS=64
 
-# ./build/demos/test_cq 1000000 12 sift1M 32 64 5 $efs
-
-
-for((i=0;i<5;i++)) do
-    # ./build/demos/test_hnsw 1000000 12 sift1M 32 64 $i $efs
-    # ./build/demos/test_acorn 1000000 12 sift1M 32 64 $i $efs
-    ./build/demos/test_cq 1000000 12 sift1M 32 64 $i $efs
+for((i=0;i<4;i++)) do
+    ./build/demos/test_bf $N $gamma $dataset $M $M_beta $i
 done
 
-for((i=0;i<5;i++)) do
-    # ./build/demos/test_hnsw 2029997 12 paper 32 64 $i $efs
-    # ./build/demos/test_acorn 2029997 12 paper 32 64 $i $efs
-    ./build/demos/test_cq 2029997 12 paper 32 64 $i $efs
+for((i=0;i<4;i++)) do
+    ./build/demos/test_hnsw $N $gamma $dataset $M $M_beta $i $efs
+    ./build/demos/test_acorn $N $gamma $dataset $M $M_beta $i $efs
+    ./build/demos/test_cq $N $gamma $dataset $M $M_beta $i $efs
 done
+
 
 # run of sift1M test
 # N=1000000 

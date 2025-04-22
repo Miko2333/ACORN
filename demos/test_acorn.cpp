@@ -121,7 +121,7 @@ int main(int argc, char *argv[]) {
     }
 
     std::stringstream output_file;
-    output_file << "./results/CQ_res_" << dataset << "_" << meta_num << ".txt";
+    output_file << "./results/ACORN_res_" << dataset << "_" << meta_num << ".txt";
     freopen(output_file.str().c_str(), "w", stdout);
     printf("Reading base vectors\n");
     size_t nb = 0, db = 0;

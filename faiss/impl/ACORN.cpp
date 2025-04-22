@@ -784,10 +784,10 @@ void search_neighbors_to_add(
             
 
             // limit number neighbors visisted during construciton
-            numIters = numIters + 1;
-            if (numIters > hnsw.M) {
-                break;
-            }
+            // numIters = numIters + 1;
+            // if (numIters > hnsw.M) {
+            //     break;
+            // }
 
         
         }
@@ -1286,10 +1286,6 @@ int hybrid_search_from_candidates(
                 break;
             }
 
-            if (vt.get(v1)) {
-                continue;
-            }
-
             // note that this slows down search performance significantly
             // if (debugSearchFlag) {
             //     neighbors_checked.push_back(std::make_pair(v1, metadata)); // for debugging
@@ -1297,6 +1293,11 @@ int hybrid_search_from_candidates(
             if (filter_map[v1]) {
                num_found = num_found + 1; // increment num found
             }
+            
+            if (vt.get(v1)) {
+                continue;
+            }
+
 
             // filter
             if (filter_map[v1]) {
@@ -1312,14 +1313,13 @@ int hybrid_search_from_candidates(
                         faiss::maxheap_push(++nres, D, I, d, v1);
                         // debug_search("-----------------pushed new candidate, nres: %d\n", nres);
                         promising = 1;
-                        candidates.push(v1, d);
                     } else if (d < D[0]) {
                         // debug_search("-----------------replacing top, nres: %d\n", nres);
                         faiss::maxheap_replace_top(nres, D, I, d, v1);
                         promising =1;
-                        candidates.push(v1, d);
                     }
                 }
+                candidates.push(v1, d);
 
                 if (num_found >= hnsw.M * 2) {
                     // debug_search("------------num_found: %d, M: %d - triggered outer brea, skpping to M_beta=%d neighbork\n", num_found, hnsw.M * 2, hnsw.M_beta);
@@ -1346,10 +1346,6 @@ int hybrid_search_from_candidates(
                         break;
                     }
 
-                    if (vt.get(v2)) {
-                        continue;
-                    }
-
                     // if (metadata2 == filter) {
                     if (filter_map[v2]) {
                         num_found = num_found + 1; // increment num found
@@ -1357,6 +1353,12 @@ int hybrid_search_from_candidates(
                         continue;
                     }
 
+        
+
+                    if (vt.get(v2)) {
+                        continue;
+                    }
+                    
                     vt.set(v2);
                     ndis++;
   
@@ -1366,15 +1368,14 @@ int hybrid_search_from_candidates(
                         if (nres < k) {
                             // debug_search("-----------------pushing new candidate, nres: %d (to be incrd)\n", nres);
                             faiss::maxheap_push(++nres, D, I, d2, v2);
-                            candidates.push(v2, d2);
                             // debug_search("-----------------pushed new candidate, nres: %d\n", nres);
 
                         } else if (d2 < D[0]) {
                             // debug_search("-----------------replacing top, nres: %d\n", nres);
                             faiss::maxheap_replace_top(nres, D, I, d2, v2);
-                            candidates.push(v2, d2);
                         }
                     }
+                    candidates.push(v2, d2);
                     if (num_found >= hnsw.M * 2) {
     
                         // debug_search("------------num_found: %d, 2M: %d - triggers break\n", num_found, hnsw.M * 2);

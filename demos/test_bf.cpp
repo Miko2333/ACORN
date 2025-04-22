@@ -49,7 +49,7 @@
 // create indices for debugging, write indices to file, and get recall stats for all queries
 int main(int argc, char *argv[]) {
     unsigned int nthreads = std::thread::hardware_concurrency();
-    std::cout << "====================\nSTART: running TEST_ACORN for hnsw, sift data --" << nthreads << "cores\n" << std::endl;
+    std::cout << "====================\nSTART: running TEST_BF for hnsw, sift data --" << nthreads << "cores\n" << std::endl;
     // printf("====================\nSTART: running MAKE_INDICES for hnsw --...\n");
     double t0 = elapsed();
     
