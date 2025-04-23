@@ -238,6 +238,7 @@ int main(int argc, char *argv[]) {
     faiss::IndexHNSWFlat hnsw(d, M);
     // ACORN-1
     // faiss::IndexACORNFlat acorn_1(d, M, 1, metadata, M);
+    hnsw.hnsw.efConstruction = efc;
     hnsw.hnsw.efSearch = efs;
     hnsw.add(nb, xb);
     printf("Base added: [%.3f s]\n", elapsed() - t1);

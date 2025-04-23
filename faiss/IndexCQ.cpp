@@ -305,17 +305,12 @@ void IndexCQ::search(
     idx_t check_period =
         InterruptCallback::get_period_hint(cq.max_level * d * efSearch);
     // std::cout << "block len = " << check_period << '\n';
-    const idx_t blk_len = 32;
+    const idx_t blk_len = 16;
     check_period = std::min(check_period, blk_len);
 
     #pragma omp parallel for reduction(+ : n1, n2, n3, ndis, nreorder, candidates_loop)
     for (idx_t i0 = 0; i0 < n; i0 += check_period) {
     	idx_t i1 = std::min(i0 + check_period, n);
-
-        VisitedTable vt(ntotal);
-
-        DistanceComputer* dis = storage_distance_computer(storage);
-        ScopeDeleter1<DistanceComputer> del(dis);
         
         idx_t len = i1 - i0;
         std::vector<float> tmp_q(len * len, 0); // dis between query and query
@@ -332,8 +327,12 @@ void IndexCQ::search(
         }
         ndis += len * (len - 1) / 2;
 
-        // std::cout << "Querying " << i0 << '\n';
+        VisitedTable vt(ntotal);
 
+        DistanceComputer* dis = storage_distance_computer(storage);
+        ScopeDeleter1<DistanceComputer> del(dis);
+
+        // std::cout << "Querying " << i0 << '\n';
         for (idx_t i = i0; i < i1; i++) {
             idx_t* idxi = labels + i * k;
             float* simi = distances + i * k;

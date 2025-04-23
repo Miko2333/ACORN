@@ -8,37 +8,51 @@ make -C build test_cq
 
 # now=$(date +"%m-%d-%Y")
 
+
+
 efs=16
 
-dataset="paper"
+# dataset="gist"
 
-if [[ "$dataset" == "sift" ]]; then
-    N=1000000
-    gamma=12
-    M=32
-    M_beta=64
-elif [[ "$dataset" == "paper" ]]; then
-    N=2029997
-    gamma=12
-    M=32
-    M_beta=64
-elif [[ "$dataset" == "gist" ]]; then
-    N=1000000
-    gamma=12
-    M=32
-    M_beta=64
-fi
+for dataset in "sift"; do
 
-export OMP_NUM_THREADS=64
+    if [[ "$dataset" == "sift" ]]; then
+        N=1000000
+        gamma=12
+        M=32
+        M_beta=64
+    elif [[ "$dataset" == "paper" ]]; then
+        N=2029997
+        gamma=12
+        M=32
+        M_beta=64
+    elif [[ "$dataset" == "gist" ]]; then
+        N=1000000
+        gamma=12
+        M=32
+        M_beta=64
+    fi
 
-for((i=0;i<4;i++)) do
-    ./build/demos/test_bf $N $gamma $dataset $M $M_beta $i
-done
+    # for((i=0;i<4;i++)) do
+    #     ./build/demos/test_bf $N $gamma $dataset $M $M_beta $i
+    # done
 
-for((i=0;i<4;i++)) do
-    ./build/demos/test_hnsw $N $gamma $dataset $M $M_beta $i $efs
-    ./build/demos/test_acorn $N $gamma $dataset $M $M_beta $i $efs
-    ./build/demos/test_cq $N $gamma $dataset $M $M_beta $i $efs
+    export OMP_NUM_THREADS=64
+    export OMP_PROC_BIND=close
+    export OMP_PLACES=cores
+
+    # for((i=0;i<4;i++)) do
+    #     ./build/demos/test_hnsw $N $gamma $dataset $M $M_beta $i $efs
+    # done
+
+    # for((i=0;i<4;i++)) do
+    #     ./build/demos/test_acorn $N $gamma $dataset $M $M_beta $i $efs
+    # done
+
+    for((i=0;i<4;i++)) do
+        ./build/demos/test_cq $N $gamma $dataset $M $M_beta $i $efs
+    done
+    
 done
 
 

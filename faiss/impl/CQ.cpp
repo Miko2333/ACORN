@@ -347,16 +347,57 @@ namespace {
 } // namespace
 
 namespace Opt {
+
+float Q_rsqrt(float number) {
+    if (number == 0.0f) return 0.0f;
+
+    float x2 = number * 0.5F;
+    float y  = number;
+
+    // 魔法数字（适用于 32 位 float）
+    uint32_t i = *(uint32_t*)&y;                 // 取 float 的位表示
+    i  = 0x5f3759df - (i >> 1);                  // 初始猜测的倒数平方根
+    y  = *(float*)&i;
+
+    // 一次牛顿迭代以提高精度
+    y = y * (1.5F - (x2 * y * y));               // y 是 1/sqrt(number)
+
+    return number * y;  // 推出 sqrt(number)
+}
+
+std::random_device rd;
+std::mt19937 gen(rd());
+std::uniform_real_distribution<float> rnd(0.0f, 1.0f);
+
 // check if |A-sqrt(B)| >= sqrt(C)
 // A is real distance, B and C are squared distances
 // this is used in hybrid search for CQ optimize 
 bool check_triangle(float A, float B, float C) {
-    if (fabs(A) < 1e-6) {
-        return B >= C;
+    // if (fabs(A) < 1e-6) {
+    //     return B >= C;
+    // }
+    // float D = A * A + B - C;
+    // float E = A + A;
+    // float F = D / E;
+    // return B <= F * F;
+    B = Q_rsqrt(B);
+    C = Q_rsqrt(C);
+    // B = sqrt(B);
+    // C = sqrt(C);
+    float D = fabs(A - B);
+    float E = A + B;
+    assert(D <= E);
+    if (C <= D) {
+        // if (A >= 1.0) printf("Success\n");
+        // printf("%.3f %.3f\n", C, D);
+        return true;
     }
-    float D = A * A + B - C;
-    float E = A + A;
-    return B <= (D*D) / (E*E);
+    else if (C <= E) {
+        float tmp = rnd(gen);
+        if (tmp * (E - D) >= (C - D)) return true;
+        return false;
+    }
+    return false;
 }
 
 /// moved from anonymous to Opt namespace
@@ -383,20 +424,26 @@ int hybrid_greedy_update_nearest(
         FAISS_THROW_IF_NOT(tmp_q->size() == query_len * query_len && tmp_d->size() == query_len);
     }
 
-    auto check_dis = [query_id, query_len, tmp_q, tmp_d, d_nearest] (int v) {
+    auto check_dis = [query_id, query_len, tmp_q, tmp_d, d_nearest, level] (int v) {
         if (query_id == -1) {
             return false;
         }
-        for (size_t j = 0; j < query_len; j++) {
+        // if (level >= 2) {
+        //     return false;
+        // }
+        for (size_t j = 0; j <= query_id; j++) {
+            // if (j == query_id) {
+            //     continue;
+            // }
             auto it = (*tmp_d)[j].find(v);
             if (it != (*tmp_d)[j].end()) {
                 if (check_triangle((*tmp_q)[query_id * query_len + j], it->second, d_nearest)) {
-                    // puts("check success");
+                    // printf("success on %d\n", level);
                     return true;
                 }
             }
         }
-        
+        // printf("fail on %d\n", level);
         return false;
     };
 
@@ -454,7 +501,8 @@ int hybrid_greedy_update_nearest(
                     float dis = qdis(v);
                     ndis += 1;
 
-                    if (query_id != -1) {
+                    if (query_id != -1 && level >= 1) {
+                        // printf("save on %d\n", level);
                         (*tmp_d)[query_id][v] = dis; // save this computed distance
                     }
 
@@ -500,7 +548,8 @@ int hybrid_greedy_update_nearest(
                             ndis += 1;
                             // debug_search("------------found: %d, metadata: %d distance to v: %f\n", v2, metadata2, dis2);
             
-                            if (query_id != -1) {
+                            if (query_id != -1 && level > 1) {
+                                // printf("save on %d\n", level);
                                 (*tmp_d)[query_id][v2] = dis2; // save this computed distance
                             }
 
@@ -633,6 +682,229 @@ int search_from_candidates(
     return nres;
 }
 
+// has a filter arg for hybrid search, this only gets called on level 0
+int hybrid_search_from_candidates(
+        const ACORN& hnsw,
+        DistanceComputer& qdis,
+        char* filter_map,
+        // int filter,
+        // Operation op,
+        // std::string regex,
+        int k,
+        idx_t* I,
+        float* D,
+        MinimaxHeap& candidates,
+        VisitedTable& vt,
+        ACORNStats& stats,
+        int level,
+        int nres_in = 0,
+        const SearchParametersACORN* params = nullptr
+    ) {
+    // debug("%s\n", "reached");
+    // printf("----hybrid_search_from_candidates called with filter: %d, k: %d, op: %d, regex: %s\n", filter, k, op, regex.c_str());
+    // debug_search("----hybrid_search_from_candidates called with filter: %d, k: %d\n", filter, k);
+    int nres = nres_in;
+    int ndis = 0;
+
+    // can be overridden by search params
+    bool do_dis_check = params ? params->check_relative_distance
+                               : hnsw.check_relative_distance;
+    int efSearch = params ? params->efSearch : hnsw.efSearch;
+    const IDSelector* sel = params ? params->sel : nullptr;
+
+    for (int i = 0; i < candidates.size(); i++) {
+        idx_t v1 = candidates.ids[i];
+        float d = candidates.dis[i];
+        FAISS_ASSERT(v1 >= 0);
+        if (!sel || sel->is_member(v1)) {
+            if (nres < k) {
+                faiss::maxheap_push(++nres, D, I, d, v1);
+            } else if (d < D[0]) {
+                faiss::maxheap_replace_top(nres, D, I, d, v1);
+            }
+        }
+        vt.set(v1);
+    }
+
+    int nstep = 0;
+
+
+    // timing variables
+    double t1_candidates_loop = elapsed();
+    
+    while (candidates.size() > 0) { // candidates is heap of size max(efs, k)
+        float d0 = 0;
+        int v0 = candidates.pop_min(&d0);
+        // debug_search("--------visiting v0: %d, d0: %f, candidates_size: %d\n", v0, d0, candidates.size());
+
+        if (do_dis_check) {
+            // tricky stopping condition: there are more that ef
+            // distances that are processed already that are smaller
+            // than d0
+            int n_dis_below = candidates.count_below(d0);
+            if (n_dis_below >= efSearch) {
+                // debug("--------%s\n", "n_dis_below >= efSearch BREAK cond reached");
+                // debug_search("--------n_dis_below: %d, efSearch: %d - triggers break\n", n_dis_below, efSearch);
+                break;
+            }
+        }
+
+        if (d0 > D[0] && nres >= k) {
+            break;
+        }
+
+        size_t begin, end;
+        hnsw.neighbor_range(v0, level, &begin, &end);
+
+        // variable to keep track of search expansion
+        int num_found = 0;
+        int num_new = 0;
+        bool keep_expanding = true;
+
+        // for debugging, collect all neighbors looked at in a vector
+        std::vector<std::pair<storage_idx_t, int>> neighbors_checked;
+
+        double t1_neighbors_loop = elapsed();
+        for (size_t j = begin; j < end; j++) {
+            // auto [v1, metadata] = hnsw.neighbors[j];
+            bool promising = 0;
+            bool outerskip = false;
+
+            auto v1 = hnsw.neighbors[j];
+            // auto metadata = hnsw.metadata[v1];
+            // debug_search("------------visiting neighbor (%ld) - %d, metadata: %d\n", j-begin, v1, metadata);
+
+
+            if (v1 < 0) {
+                break;
+            }
+
+            // note that this slows down search performance significantly
+            // if (debugSearchFlag) {
+            //     neighbors_checked.push_back(std::make_pair(v1, metadata)); // for debugging
+            // }
+            if (filter_map[v1]) {
+                num_found = num_found + 1; // increment num found
+            }
+            
+            if (vt.get(v1)) {
+                continue;
+            }
+
+
+            // filter
+            if (filter_map[v1]) {
+                vt.set(v1);
+                num_new = num_new + 1; // increment num new
+                ndis++;
+                float d = qdis(v1);
+                // debug_search("------------new candidate %d, distance: %f\n", v1, d);
+
+                if (!sel || sel->is_member(v1)) {
+                    if (nres < k) {
+                        // debug_search("-----------------pushing new candidate, nres: %d (to be incrd)\n", nres);
+                        faiss::maxheap_push(++nres, D, I, d, v1);
+                        // debug_search("-----------------pushed new candidate, nres: %d\n", nres);
+                        promising = 1;
+                    } else if (d < D[0]) {
+                        // debug_search("-----------------replacing top, nres: %d\n", nres);
+                        faiss::maxheap_replace_top(nres, D, I, d, v1);
+                        promising =1;
+                    }
+                }
+                candidates.push(v1, d);
+
+                if (num_found >= hnsw.M * 2) {
+                    // debug_search("------------num_found: %d, M: %d - triggered outer brea, skpping to M_beta=%d neighbork\n", num_found, hnsw.M * 2, hnsw.M_beta);
+                    keep_expanding = false;
+                    break;
+                }
+            }    
+            
+            if (((j - begin >= hnsw.M_beta) && keep_expanding) || hnsw.gamma == 1) {
+                debug_search("------------expanding neighbor list for %d; neighbor %ld, hnsw.M_beta: %d\n", v1, j-begin, hnsw.M_beta);
+                size_t begin2, end2;
+                hnsw.neighbor_range(v1, level, &begin2, &end2);
+                // try to parallelize neighbor expansion
+                for (size_t j2 = begin2; j2 < end2; j2+=1) {
+                    
+                    auto v2 = hnsw.neighbors[j2];
+
+                    // note that this slows down search performance significantly when flag is on
+                    // if (debugSearchFlag) {
+                    //     neighbors_checked.push_back(std::make_pair(v2, metadata2)); // for debugging
+                    // }
+                    if (v2 < 0) {
+                        // continue;
+                        break;
+                    }
+
+                    // if (metadata2 == filter) {
+                    if (filter_map[v2]) {
+                        num_found = num_found + 1; // increment num found
+                    } else {
+                        continue;
+                    }
+
+        
+
+                    if (vt.get(v2)) {
+                        continue;
+                    }
+                    
+                    vt.set(v2);
+                    ndis++;
+  
+                    float d2 = qdis(v2);
+                    // debug_search("------------new candidate from expansion %d, distance: %f\n", v2, d2);
+                    if (!sel || sel->is_member(v2)) {
+                        if (nres < k) {
+                            // debug_search("-----------------pushing new candidate, nres: %d (to be incrd)\n", nres);
+                            faiss::maxheap_push(++nres, D, I, d2, v2);
+                            // debug_search("-----------------pushed new candidate, nres: %d\n", nres);
+
+                        } else if (d2 < D[0]) {
+                            // debug_search("-----------------replacing top, nres: %d\n", nres);
+                            faiss::maxheap_replace_top(nres, D, I, d2, v2);
+                        }
+                    }
+                    candidates.push(v2, d2);
+                    if (num_found >= hnsw.M * 2) {
+    
+                        // debug_search("------------num_found: %d, 2M: %d - triggers break\n", num_found, hnsw.M * 2);
+                        keep_expanding = false;
+                        break;
+                    }
+                }
+
+
+    
+            }
+        
+            
+        }
+
+     
+        
+
+        nstep++; 
+        if (!do_dis_check && nstep > efSearch) {
+            break;
+        }
+    }
+
+    if (level == 0) {
+        stats.n1++;
+        if (candidates.size() == 0) {
+            stats.n2++;
+        }
+        stats.n3 += ndis;
+    }
+
+
+    return nres;
+}
+
 } // anonymous namespace
 
 namespace Opt{
@@ -668,19 +940,20 @@ int hybrid_search_from_candidates(
         FAISS_THROW_IF_NOT(tmp_q->size() == query_len * query_len && tmp_d->size() == query_len);
     }
 
-    auto check_dis = [query_id, query_len, tmp_q, tmp_d] (int v, float dist) {
+    auto check_dis = [query_id, query_len, tmp_q, tmp_d, level] (int v, float dist) {
         if (query_id == -1) {
             return false;
         }
-        for (size_t j = 0; j < query_len; j++) {
+        for (size_t j = 0; j <= query_id; j++) {
             auto it = (*tmp_d)[j].find(v);
             if (it != (*tmp_d)[j].end()) {
                 if (check_triangle((*tmp_q)[query_id * query_len + j], it->second, dist)) {
-                    // puts("check success");
+                    // printf("success on %d\n", level);
                     return true;
                 }
             }
         }
+        // printf("fail on %d\n", level);
         return false;
     };
 
@@ -784,7 +1057,7 @@ int hybrid_search_from_candidates(
                 bool flag = false;
 
                 if (nres >= k) {
-                    // flag = check_dis(v1, D[0]);
+                    flag = check_dis(v1, D[0]);
                 }
 
                 float d = 0;
@@ -792,6 +1065,7 @@ int hybrid_search_from_candidates(
                     ndis++;
                     d = qdis(v1);
                     // if (query_id != -1) {
+                    //     // printf("save on %d\n", level);
                     //     (*tmp_d)[query_id][v1] = d; // save this computed distance
                     // }
                 }
@@ -858,7 +1132,7 @@ int hybrid_search_from_candidates(
                     bool flag = false;
 
                     if (nres >= k) {
-                        // flag = check_dis(v2, D[0]);
+                        flag = check_dis(v2, D[0]);
                     }
 
                     float d2 = 0;
@@ -866,6 +1140,7 @@ int hybrid_search_from_candidates(
                         ndis++;
                         d2 = qdis(v2);
                         // if (query_id != -1) {
+                        //     // printf("save on %d\n", level);
                         //     (*tmp_d)[query_id][v2] = d2; // save this computed distance
                         // }
                     }
@@ -1066,8 +1341,10 @@ ACORNStats CQ::hybrid_search(
 
             candidates.push(nearest, d_nearest);
             debug_search("-starting BFS at level 0 with ef: %d, nearest: %d, d: %f, metadata: %d\n", ef, nearest, d_nearest, metadata[nearest]);
-            Opt::hybrid_search_from_candidates(
-                    *this, qdis, filter_map, k, I, D, candidates, vt, stats, 0, query_id, query_len, tmp_q, tmp_d, 0, params);
+            hybrid_search_from_candidates(
+                *this, qdis, filter_map, k, I, D, candidates, vt, stats, 0, 0, params);
+            // Opt::hybrid_search_from_candidates(
+            //         *this, qdis, filter_map, k, I, D, candidates, vt, stats, 0, query_id, query_len, tmp_q, tmp_d, 0, params);
             
 
         } else {
@@ -1104,26 +1381,42 @@ ACORNStats CQ::hybrid_search(
             }
 
             if (level == 0) {
-                nres = Opt::hybrid_search_from_candidates(
-                        *this, qdis, filter_map, k, I, D, candidates, vt, stats, 0, query_id, query_len, tmp_q, tmp_d);
+                nres = hybrid_search_from_candidates(
+                    *this, qdis, filter_map, k, I, D, candidates, vt, stats, 0);
+                // nres = Opt::hybrid_search_from_candidates(
+                //         *this, qdis, filter_map, k, I, D, candidates, vt, stats, 0, query_id, query_len, tmp_q, tmp_d);
             
                 
             } else {
-                nres = Opt::hybrid_search_from_candidates(
-                        *this,
-                        qdis,
-                        filter_map,
-                        // filter,
-                        // op,
-                        // regex,
-                        candidates_size,
-                        I_to_next.data(),
-                        D_to_next.data(),
-                        candidates,
-                        vt,
-                        stats,
-                        level,
-                        query_id, query_len, tmp_q, tmp_d);
+                nres = hybrid_search_from_candidates(
+                    *this,
+                    qdis,
+                    filter_map,
+                    // filter,
+                    // op,
+                    // regex,
+                    candidates_size,
+                    I_to_next.data(),
+                    D_to_next.data(),
+                    candidates,
+                    vt,
+                    stats,
+                    level);
+                // nres = Opt::hybrid_search_from_candidates(
+                //         *this,
+                //         qdis,
+                //         filter_map,
+                //         // filter,
+                //         // op,
+                //         // regex,
+                //         candidates_size,
+                //         I_to_next.data(),
+                //         D_to_next.data(),
+                //         candidates,
+                //         vt,
+                //         stats,
+                //         level,
+                //         query_id, query_len, tmp_q, tmp_d);
             }
             vt.advance();
         }
