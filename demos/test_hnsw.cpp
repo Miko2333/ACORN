@@ -234,14 +234,31 @@ int main(int argc, char *argv[]) {
 
     printf("Start building HNSW\n");
     double t1 = elapsed();
-    // ACORN-gamma
-    faiss::IndexHNSWFlat hnsw(d, M);
-    // ACORN-1
-    // faiss::IndexACORNFlat acorn_1(d, M, 1, metadata, M);
-    hnsw.hnsw.efConstruction = efc;
-    hnsw.hnsw.efSearch = efs;
-    hnsw.add(nb, xb);
-    printf("Base added: [%.3f s]\n", elapsed() - t1);
+    faiss::IndexHNSWFlat* hnsw = new faiss::IndexHNSWFlat(d, M);
+
+    bool index_flag = false;
+    std::stringstream index_file;
+    index_file << "./indexes/HNSW_" << dataset << ".fvecs";
+    if (meta_flag && fileExistsAndNotEmpty(index_file.str())) {
+        index_flag = true;
+    }
+    if (index_flag) {
+        printf("Loading HNSW index from file: %s\n", index_file.str().c_str());
+        delete hnsw;
+        faiss::Index* tmp = faiss::read_index(index_file.str().c_str());
+        hnsw = dynamic_cast<faiss::IndexHNSWFlat*>(tmp);
+        if (!hnsw) {
+            printf("Failed to load HNSW index from file: %s\n", index_file.str().c_str());
+            return 0;
+        }
+    }
+    else {
+        printf("Creating HNSW index\n");
+        hnsw->hnsw.efConstruction = efc;
+        hnsw->add(nb, xb);
+        faiss::write_index(hnsw, index_file.str().c_str());
+        printf("Base added: [%.3f s]\n", elapsed() - t1);
+    }
 
     int cand = k * gamma;
     std::vector<faiss::idx_t> nns(cand * nq);
@@ -265,8 +282,8 @@ int main(int argc, char *argv[]) {
     printf("Searching\n");
     double t3 = elapsed();
     // HNSW post-filtering
-    
-    hnsw.search(nq, xq, cand, dis.data(), nns.data());
+    hnsw->hnsw.efSearch = efs;
+    hnsw->search(nq, xq, cand, dis.data(), nns.data());
     for (int i = 0; i < nq; i++) {
         int tot = 0;
         for (int j = 0; j < cand; j++) {

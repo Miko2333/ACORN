@@ -236,12 +236,32 @@ int main(int argc, char *argv[]) {
     printf("Start building ACORN\n");
     double t1 = elapsed();
     // ACORN-gamma
-    faiss::IndexACORNFlat acorn_gamma(d, M, gamma, metadata_base, M_beta);
+    faiss::IndexACORNFlat *acorn_gamma = new faiss::IndexACORNFlat(d, M, gamma, metadata_base, M_beta);
     // ACORN-1
     // faiss::IndexACORNFlat acorn_1(d, M, 1, metadata, M);
-    acorn_gamma.acorn.efSearch = efs;
-    acorn_gamma.add(nb, xb);
-    printf("Base added: [%.3f s]\n", elapsed() - t1);
+
+    bool index_flag = false;
+    std::stringstream index_file;
+    index_file << "./indexes/ACORN_" << dataset << ".fvecs";
+    if (meta_flag && fileExistsAndNotEmpty(index_file.str())) {
+        index_flag = true;
+    }
+    if (index_flag) {
+        printf("Loading ACORN index from file: %s\n", index_file.str().c_str());
+        delete acorn_gamma;
+        faiss::Index* tmp = faiss::read_index(index_file.str().c_str());
+        acorn_gamma = dynamic_cast<faiss::IndexACORNFlat*>(tmp);
+        if (!acorn_gamma) {
+            printf("Failed to load ACORN index from file: %s\n", index_file.str().c_str());
+            return 0;
+        }
+    }
+    else {
+        printf("Creating ACORN index\n");
+        acorn_gamma->add(nb, xb);
+        faiss::write_index(acorn_gamma, index_file.str().c_str());
+        printf("Base added: [%.3f s]\n", elapsed() - t1);
+    }
 
     std::vector<faiss::idx_t> nns2(k * nq);
     std::vector<float> dis2(k * nq);
@@ -261,7 +281,8 @@ int main(int argc, char *argv[]) {
 
     printf("Searching\n");
     double t3 = elapsed();
-    acorn_gamma.search(nq, xq, k, dis2.data(), nns2.data(), filter_ids_map.data());
+    acorn_gamma->acorn.efSearch = efs;
+    acorn_gamma->search(nq, xq, k, dis2.data(), nns2.data(), filter_ids_map.data());
     double query_time = elapsed() - t3;
     printf("Search done: [%.3f s]\n", query_time);
 

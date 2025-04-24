@@ -501,7 +501,7 @@ int hybrid_greedy_update_nearest(
                     float dis = qdis(v);
                     ndis += 1;
 
-                    if (query_id != -1 && level >= 1) {
+                    if (query_id != -1 && level > 1) {
                         // printf("save on %d\n", level);
                         (*tmp_d)[query_id][v] = dis; // save this computed distance
                     }

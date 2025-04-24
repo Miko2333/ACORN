@@ -10,11 +10,11 @@ make -C build test_cq
 
 
 
-efs=16
+efs=60
 
 # dataset="gist"
 
-for dataset in "sift"; do
+for dataset in "sift" "gist" "paper"; do
 
     if [[ "$dataset" == "sift" ]]; then
         N=1000000
@@ -41,13 +41,13 @@ for dataset in "sift"; do
     export OMP_PROC_BIND=close
     export OMP_PLACES=cores
 
-    # for((i=0;i<4;i++)) do
-    #     ./build/demos/test_hnsw $N $gamma $dataset $M $M_beta $i $efs
-    # done
+    for((i=0;i<4;i++)) do
+        ./build/demos/test_hnsw $N $gamma $dataset $M $M_beta $i $efs
+    done
 
-    # for((i=0;i<4;i++)) do
-    #     ./build/demos/test_acorn $N $gamma $dataset $M $M_beta $i $efs
-    # done
+    for((i=0;i<4;i++)) do
+        ./build/demos/test_acorn $N $gamma $dataset $M $M_beta $i $efs
+    done
 
     for((i=0;i<4;i++)) do
         ./build/demos/test_cq $N $gamma $dataset $M $M_beta $i $efs

@@ -59,6 +59,7 @@
 
 // hybrid indices
 #include <faiss/IndexACORN.h>
+#include <faiss/IndexCQ.h>
 
 /*************************************************************
  * The I/O format is the content of the class. For objects that are
@@ -320,6 +321,30 @@ static void write_HNSW(const HNSW* hnsw, IOWriter* f) {
 }
 
 static void write_ACORN(const ACORN* hnsw, IOWriter* f) {
+    WRITEVECTOR(hnsw->assign_probas);
+    WRITEVECTOR(hnsw->cum_nneighbor_per_level);
+    WRITEVECTOR(hnsw->levels);
+    WRITEVECTOR(hnsw->offsets);
+    WRITEVECTOR(hnsw->neighbors);
+
+    //added for hybrid version
+    WRITEVECTOR(hnsw->nb_per_level)
+    // WRITEVECTOR(hnsw->metadata)
+
+    WRITE1(hnsw->entry_point);
+    WRITE1(hnsw->max_level);
+    WRITE1(hnsw->efConstruction);
+    WRITE1(hnsw->efSearch);
+    WRITE1(hnsw->upper_beam);
+
+    // added for hybrid version
+    WRITE1(hnsw->gamma);
+    WRITE1(hnsw->M);
+    WRITE1(hnsw->M_beta);
+
+}
+
+static void write_CQ(const CQ* hnsw, IOWriter* f) {
     WRITEVECTOR(hnsw->assign_probas);
     WRITEVECTOR(hnsw->cum_nneighbor_per_level);
     WRITEVECTOR(hnsw->levels);
@@ -775,6 +800,13 @@ void write_index(const Index* idx, IOWriter* f) {
         write_index_header(idxhnsw, f);
         write_HNSW(&idxhnsw->hnsw, f);
         write_index(idxhnsw->storage, f);
+    } else if (const IndexCQ* indxcq = dynamic_cast<const IndexCQ*>(idx)) {
+        uint32_t h = fourcc("IHNI"); // this needs to be a 4 letter header
+        FAISS_THROW_IF_NOT(h != 0);
+        WRITE1(h);
+        write_index_header(indxcq, f);
+        write_CQ(&indxcq->cq, f);
+        write_index(indxcq->storage, f);
     } else if (const IndexACORN* indxacorn = dynamic_cast<const IndexACORN*>(idx)) {
         uint32_t h = fourcc("IHNH"); // this needs to be a 4 letter header
         FAISS_THROW_IF_NOT(h != 0);

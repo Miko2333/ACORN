@@ -21,6 +21,7 @@ faiss/python/swigfaiss_avx2.swig
 /testing_data/
 /nlohmann_json
 /results/
+/indexes/
 .vscode
 *.png
 draw.py

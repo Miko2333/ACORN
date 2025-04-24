@@ -47,7 +47,7 @@ struct IndexCQ : IndexACORN {
 	~IndexCQ() = default;
 
 	// add to CQ, override ACORN
-	void add(idx_t, const float* x);
+	void add(idx_t n, const float* x);
 
 	// hybrid search in CQ, override ACORN
 	void search(

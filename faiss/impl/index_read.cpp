@@ -57,6 +57,7 @@
 #include <faiss/IndexBinaryIVF.h>
 
 #include <faiss/IndexACORN.h>
+#include <faiss/IndexCQ.h>
 
 namespace faiss {
 
@@ -389,6 +390,27 @@ static void read_ACORN(ACORN* acorn, IOReader* f) {
     READ1(acorn->gamma);
     READ1(acorn->M);
     READ1(acorn->M_beta);
+}
+
+static void read_CQ(CQ* cq, IOReader* f) {
+    READVECTOR(cq->assign_probas);
+    READVECTOR(cq->cum_nneighbor_per_level);
+    READVECTOR(cq->levels);
+    READVECTOR(cq->offsets);
+    READVECTOR(cq->neighbors);
+
+    // added for hybrid version
+    READVECTOR(cq->nb_per_level);
+    // READVECTOR(cq->metadata);
+
+    READ1(cq->entry_point);
+    READ1(cq->max_level);
+    READ1(cq->efConstruction);
+    READ1(cq->efSearch);
+    READ1(cq->upper_beam);
+    READ1(cq->gamma);
+    READ1(cq->M);
+    READ1(cq->M_beta);
 }
 
 static void read_NSG(NSG* nsg, IOReader* f) {
@@ -974,6 +996,16 @@ Index* read_index(IOReader* f, int io_flags) {
         idxacorn->storage = read_index(f, io_flags);
         idxacorn->own_fields = true;
         idx = idxacorn;
+    } else if (h == fourcc("IHNI")) {
+        // IndexHNSWFlat* idxhnswhybrid = new IndexHNSWFlat();
+        IndexCQ* idxcq= nullptr;
+        std::vector<int> metadata = {};
+        idxcq = new IndexCQFlat(0, 0, 0, metadata, 0);
+        read_index_header(idxcq, f);
+        read_CQ(&idxcq->cq, f);
+        idxcq->storage = read_index(f, io_flags);
+        idxcq->own_fields = true;
+        idx = idxcq;
     } else if (
             h == fourcc("INSf") || h == fourcc("INSp") || h == fourcc("INSs")) {
         IndexNSG* idxnsg;

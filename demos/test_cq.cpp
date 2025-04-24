@@ -236,10 +236,30 @@ int main(int argc, char *argv[]) {
     
     printf("Start building CQ\n");
     double t1 = elapsed();
-    faiss::IndexCQFlat cq(d, M, gamma, metadata_base, M_beta);
-    cq.cq.efSearch = efs;
-    cq.add(nb, xb);
-    printf("Base added: [%.3f s]\n", elapsed() - t1);
+    faiss::IndexCQFlat* cq = new faiss::IndexCQFlat(d, M, gamma, metadata_base, M_beta);
+
+    bool index_flag = false;
+    std::stringstream index_file;
+    index_file << "./indexes/CQ_" << dataset << ".fvecs";
+    if (meta_flag && fileExistsAndNotEmpty(index_file.str())) {
+        index_flag = true;
+    }
+    if (index_flag) {
+        printf("Loading CQ index from file: %s\n", index_file.str().c_str());
+        delete cq;
+        faiss::Index* tmp = faiss::read_index(index_file.str().c_str());
+        cq = dynamic_cast<faiss::IndexCQFlat*>(tmp);
+        if (!cq) {
+            printf("Failed to load CQ index from file: %s\n", index_file.str().c_str());
+            return 0;
+        }
+    }
+    else {
+        printf("Creating CQ index\n");
+        cq->add(nb, xb);
+        faiss::write_index(cq, index_file.str().c_str());
+        printf("Base added: [%.3f s]\n", elapsed() - t1);
+    }
 
     std::vector<faiss::idx_t> nns2(k * nq);
     std::vector<float> dis2(k * nq);
@@ -278,7 +298,8 @@ int main(int argc, char *argv[]) {
 
     printf("Searching\n");
     double t3 = elapsed();
-    cq.search(nq, xq, k, dis2.data(), nns2.data(), filter_ids_map.data());
+    cq->cq.efSearch = efs;
+    cq->search(nq, xq, k, dis2.data(), nns2.data(), filter_ids_map.data());
     double query_time = elapsed() - t3;
     printf("Search done: [%.3f s]\n", query_time);
 

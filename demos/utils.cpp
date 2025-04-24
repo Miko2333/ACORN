@@ -544,7 +544,10 @@ std::vector<faiss::idx_t> load_gt(std::string dataset, int n_centroids, int alph
 
 }
 
-
+bool fileExistsAndNotEmpty(const std::string& path) {
+    std::ifstream file(path, std::ios::binary | std::ios::ate); // 以文件末尾打开获取大小
+    return file.is_open() && file.tellg() > 0;
+}
 
 
 
