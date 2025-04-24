@@ -1256,9 +1256,9 @@ int hybrid_search_from_candidates(
             }
         }
 
-        if (d0 > D[0] && nres >= k) {
-            break;
-        }
+        // if (d0 > D[0] && nres >= k) {
+        //     break;
+        // }
 
         size_t begin, end;
         hnsw.neighbor_range(v0, level, &begin, &end);

@@ -10,11 +10,11 @@ make -C build test_cq
 
 
 
-efs=60
+efs=15
 
-# dataset="gist"
+dataset="sift"
 
-for dataset in "sift" "gist" "paper"; do
+# for dataset in "sift" "gist" "paper"; do
 
     if [[ "$dataset" == "sift" ]]; then
         N=1000000
@@ -45,13 +45,13 @@ for dataset in "sift" "gist" "paper"; do
         ./build/demos/test_hnsw $N $gamma $dataset $M $M_beta $i $efs
     done
 
-    for((i=0;i<4;i++)) do
-        ./build/demos/test_acorn $N $gamma $dataset $M $M_beta $i $efs
-    done
+    # for((i=0;i<4;i++)) do
+    #     ./build/demos/test_acorn $N $gamma $dataset $M $M_beta $i $efs
+    # done
 
-    for((i=0;i<4;i++)) do
-        ./build/demos/test_cq $N $gamma $dataset $M $M_beta $i $efs
-    done
+    # for((i=0;i<4;i++)) do
+    #     ./build/demos/test_cq $N $gamma $dataset $M $M_beta $i $efs
+    # done
     
 done
 

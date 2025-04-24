@@ -315,6 +315,9 @@ void IndexCQ::search(
         idx_t len = i1 - i0;
         std::vector<float> tmp_q(len * len, 0); // dis between query and query
         std::vector<std::unordered_map <idx_t, float> > tmp_d(len); // dis between query and database
+        for (idx_t i = 0; i < len; i++) {
+            tmp_d[i].reserve(500);
+        }
 
         for (idx_t i = 0; i < len; i++) {
             for (idx_t j = 0; j < i; j++) {
