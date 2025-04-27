@@ -119,3 +119,19 @@ target_link_libraries(test_bf PRIVATE faiss)
 if(OpenMP_CXX_FOUND)
     target_link_libraries(test_bf PRIVATE OpenMP::OpenMP_CXX)
 endif()
+
+add_executable(test_hnsw_high EXCLUDE_FROM_ALL test_hnsw_high.cpp)
+target_link_libraries(test_hnsw_high PRIVATE faiss)
+
+add_executable(test_acorn_high EXCLUDE_FROM_ALL test_acorn_high.cpp)
+target_link_libraries(test_acorn_high PRIVATE faiss)
+
+add_executable(test_cq_high EXCLUDE_FROM_ALL test_cq_high.cpp)
+target_link_libraries(test_cq_high PRIVATE faiss)
+
+find_package(OpenMP REQUIRED)
+add_executable(test_bf_high EXCLUDE_FROM_ALL test_bf_high.cpp)
+target_link_libraries(test_bf_high PRIVATE faiss)
+if(OpenMP_CXX_FOUND)
+    target_link_libraries(test_bf PRIVATE OpenMP::OpenMP_CXX)
+endif()

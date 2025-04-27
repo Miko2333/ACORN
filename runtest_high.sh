@@ -1,57 +1,57 @@
 cmake -DFAISS_ENABLE_GPU=OFF -DFAISS_ENABLE_PYTHON=OFF -DBUILD_TESTING=ON -DBUILD_SHARED_LIBS=ON -DCMAKE_BUILD_TYPE=release -B build
 make -C build -j faiss
 make -C build utils
-make -C build test_bf
-make -C build test_hnsw
-make -C build test_acorn
-make -C build test_cq
+make -C build test_bf_high
+make -C build test_hnsw_high
+make -C build test_acorn_high
+make -C build test_cq_high
 
 # now=$(date +"%m-%d-%Y")
 
 
 
-efs=20
+efs=45
 
-dataset="gist"
+# dataset="sift"
 
-# for dataset in "sift" "gist" "paper"; do
+for dataset in "sift" "gist"; do
 
     if [[ "$dataset" == "sift" ]]; then
         N=1000000
-        gamma=12
+        gamma=30
         M=32
         M_beta=64
     elif [[ "$dataset" == "paper" ]]; then
         N=2029997
-        gamma=12
+        gamma=30
         M=32
         M_beta=64
     elif [[ "$dataset" == "gist" ]]; then
         N=1000000
-        gamma=12
+        gamma=30
         M=32
         M_beta=64
     fi
 
-    # for((i=0;i<4;i++)) do
-    #     ./build/demos/test_bf $N $gamma $dataset $M $M_beta $i
+    # for((i=4;i<5;i++)) do
+    #     ./build/demos/test_bf_high $N $gamma $dataset $M $M_beta $i
     # done
 
-    # export OMP_NUM_THREADS=64
-    # export OMP_PROC_BIND=close
-    # export OMP_PLACES=cores
+    export OMP_NUM_THREADS=64
+    export OMP_PROC_BIND=close
+    export OMP_PLACES=cores
 
-    for((i=0;i<4;i++)) do
-        ./build/demos/test_hnsw $N $gamma $dataset $M $M_beta $i $efs
+    for((i=4;i<6;i++)) do
+        ./build/demos/test_hnsw_high $N $gamma $dataset $M $M_beta $i $efs
     done
 
-    # for((i=0;i<4;i++)) do
-    #     ./build/demos/test_acorn $N $gamma $dataset $M $M_beta $i $efs
-    # done
+    for((i=4;i<6;i++)) do
+        ./build/demos/test_acorn_high $N $gamma $dataset $M $M_beta $i $efs
+    done
 
-    # for((i=0;i<4;i++)) do
-    #     ./build/demos/test_cq $N $gamma $dataset $M $M_beta $i $efs
-    # done
+    for((i=4;i<6;i++)) do
+        ./build/demos/test_cq_high $N $gamma $dataset $M $M_beta $i $efs
+    done
     
 done
 
