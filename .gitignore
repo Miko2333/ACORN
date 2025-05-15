@@ -18,11 +18,12 @@
 /tests/gtest/
 faiss/python/swigfaiss_avx2.swig
 /build/
-/testing_data/
+# /testing_data/
 /nlohmann_json
-/results/
+# /results/
 /indexes/
 .vscode
-*.png
-draw.py
+*.tar.gz
+*.fvecs
+*.ivecs
 * text=auto

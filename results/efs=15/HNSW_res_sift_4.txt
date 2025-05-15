@@ -1,0 +1,24 @@
+Reading base vectors
+1000000 128
+Reading base metadata
+Reading query vectors
+10000
+Reading query metadata
+Reading groundtruth
+10000 10
+Start building HNSW
+Loading HNSW index from file: ./indexes/HNSW_sift_high.fvecs
+Predicate filtering
+Predicate filtering done: [36.233 s]
+Searching
+Search done: [0.145 s]
+Recall@10 = 0.645
+QPS = 68966.434
+============= HNSW QUERY PROFILING STATS =============
+[43.245 s] Timing results for search of k=10 nearest neighbors of nq=10000 vectors in the index
+n1: 10000
+n2: 0
+n3 (number distance comps at level 0): 7301119
+ndis: 0
+nreorder: 0
+average distance computations per query: 730.111877

@@ -10,9 +10,9 @@ make -C build test_cq
 
 
 
-efs=20
+efs=15
 
-dataset="gist"
+dataset="sift"
 
 # for dataset in "sift" "gist" "paper"; do
 
@@ -33,23 +33,23 @@ dataset="gist"
         M_beta=64
     fi
 
-    # for((i=0;i<4;i++)) do
+    # for((i=6;i<7;i++)) do
     #     ./build/demos/test_bf $N $gamma $dataset $M $M_beta $i
     # done
 
-    # export OMP_NUM_THREADS=64
+    export OMP_NUM_THREADS=32
     # export OMP_PROC_BIND=close
     # export OMP_PLACES=cores
 
-    for((i=0;i<4;i++)) do
-        ./build/demos/test_hnsw $N $gamma $dataset $M $M_beta $i $efs
-    done
-
-    # for((i=0;i<4;i++)) do
-    #     ./build/demos/test_acorn $N $gamma $dataset $M $M_beta $i $efs
+    # for((i=6;i<7;i++)) do
+    #     ./build/demos/test_hnsw $N $gamma $dataset $M $M_beta $i $efs
     # done
 
-    # for((i=0;i<4;i++)) do
+    for((i=6;i<7;i++)) do
+        ./build/demos/test_acorn $N $gamma $dataset $M $M_beta $i $efs
+    done
+
+    # for((i=6;i<7;i++)) do
     #     ./build/demos/test_cq $N $gamma $dataset $M $M_beta $i $efs
     # done
     

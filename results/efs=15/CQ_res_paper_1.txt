@@ -1,0 +1,24 @@
+Reading base vectors
+2029997 200
+Reading base metadata
+Reading query vectors
+10000
+Reading query metadata
+Reading groundtruth
+10000 10
+Start building CQ
+Loading CQ index from file: ./indexes/CQ_paper.fvecs
+Predicate filtering
+Predicate filtering done: [4.772 s]
+Searching
+Search done: [0.184 s]
+Recall@10 = 0.902
+QPS = 54354.301
+============= CQ QUERY PROFILING STATS =============
+[15.695 s] Timing results for search of k=10 nearest neighbors of nq=10000 vectors in the index
+n1: 10000
+n2: 10000
+n3 (number distance comps at level 0): 4208927
+ndis: 75000
+nreorder: 0
+average distance computations per query: 420.892700

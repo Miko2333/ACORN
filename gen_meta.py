@@ -5,7 +5,7 @@ import numpy as np
 N = 0
 M = 0
 
-dataset = "gist"
+dataset = "sift"
 
 if dataset == "sift":
     N = 1000000
@@ -17,10 +17,10 @@ elif dataset == "gist":
     N = 1000000
     M = 1000
 
-iter = 0
+iter = 6
 
 mod_b = 0
-mod_q = 0
+mod_q = 2
 
 cad = 0
 
@@ -56,6 +56,8 @@ elif mod_q == 1:
     num = []
     for i in range(M):
         num.append(min(i // (M // cad) + 1, cad))
+elif mod_q == 2:
+    num = [1 for _ in range(N)]
 
 with open(output_file, "w") as f:
     f.write(" ".join(map(str, num)))

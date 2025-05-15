@@ -10,11 +10,14 @@ make -C build test_cq_high
 
 
 
-efs=45
+for ((efs=50;efs>=15;efs-=5)); do
+
+folder="results/efs=$efs"
+mkdir -p "$folder"
 
 # dataset="sift"
 
-for dataset in "sift" "gist"; do
+for dataset in "paper"; do
 
     if [[ "$dataset" == "sift" ]]; then
         N=1000000
@@ -33,29 +36,30 @@ for dataset in "sift" "gist"; do
         M_beta=64
     fi
 
-    # for((i=4;i<5;i++)) do
-    #     ./build/demos/test_bf_high $N $gamma $dataset $M $M_beta $i
-    # done
+    for((i=4;i<5;i++)) do
+        ./build/demos/test_bf_high $N $gamma $dataset $M $M_beta $i
+    done
 
     export OMP_NUM_THREADS=64
     export OMP_PROC_BIND=close
     export OMP_PLACES=cores
 
-    for((i=4;i<6;i++)) do
+    for((i=4;i<5;i++)) do
         ./build/demos/test_hnsw_high $N $gamma $dataset $M $M_beta $i $efs
     done
 
-    for((i=4;i<6;i++)) do
+    for((i=4;i<5;i++)) do
         ./build/demos/test_acorn_high $N $gamma $dataset $M $M_beta $i $efs
     done
 
-    for((i=4;i<6;i++)) do
+    for((i=4;i<5;i++)) do
         ./build/demos/test_cq_high $N $gamma $dataset $M $M_beta $i $efs
     done
     
 done
 
-
+mv results/*.txt "$folder"
+done
 # run of sift1M test
 # N=1000000 
 # gamma=12 

@@ -1,0 +1,24 @@
+Reading base vectors
+2029997 200
+Reading base metadata
+Reading query vectors
+10000
+Reading query metadata
+Reading groundtruth
+10000 10
+Start building ACORN
+Loading ACORN index from file: ./indexes/ACORN_paper_high.fvecs
+Predicate filtering
+Predicate filtering done: [73.383 s]
+Searching
+Search done: [0.234 s]
+Recall@10 = 0.972
+QPS = 42669.401
+============= ACORN QUERY PROFILING STATS =============
+[84.526 s] Timing results for search of k=10 nearest neighbors of nq=10000 vectors in the index
+n1: 10000
+n2: 10000
+n3 (number distance comps at level 0): 7586919
+ndis: 0
+nreorder: 0
+average distance computations per query: 758.691895
